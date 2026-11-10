@@ -51,15 +51,27 @@ html[${MARK}] [data-sidebar-sticky-tier] { container-type: scroll-state; }
 
 /* Main pane. */
 html[${MARK}] [data-sidebar="inset"]:not([data-framed] *) { background-color: var(--ocean-pane) !important; }
-/* Full-height pages and the composer dock repeat the pane color; clear them. */
-html[${MARK}] [data-sidebar="inset"] :is(.h-full, .shrink-0).bg-background { background-color: transparent !important; }
+/* Full-height pages and bars repeat the pane color; clear them. The
+   composer dock has its own rule below. */
+html[${MARK}] [data-sidebar="inset"] :is(.h-full, .shrink-0).bg-background:not([data-scroll-footer] > *) { background-color: transparent !important; }
 /* Headers and scrims become glass, and the fades that hid scrolled content
    under them go away (they would draw a band of solid color). */
 html[${MARK}] [data-sidebar="inset"] :is(.bg-surface-scrim, .bg-surface-scrim\\/95) {
   background-color: transparent !important;
   -webkit-backdrop-filter: var(--ocean-glass); backdrop-filter: var(--ocean-glass);
 }
-html[${MARK}] [data-overflow-fade] { visibility: hidden; }
+html[${MARK}] [data-overflow-fade]:not([data-scroll-footer] > * > *) { visibility: hidden; }
+/* The composer dock is sticky inside the thread's scroll area, so messages
+   scroll under it. bb paints the dock opaque, with a fade above it, to hide
+   them. Keep that while the dock is stuck. At the end of the thread nothing
+   is under the dock, so it turns clear. A blur cannot replace the opaque
+   dock: the desktop app's main card is a backdrop root, so text under a
+   blur still shows through. */
+html[${MARK}] [data-scroll-footer] { container-type: scroll-state; }
+@container not scroll-state(stuck: bottom) {
+  html[${MARK}] [data-sidebar="inset"] [data-scroll-footer] > .bg-background { background-color: transparent !important; }
+  html[${MARK}] [data-scroll-footer] > * > [data-overflow-fade] { visibility: hidden; }
+}
 
 /* Desktop app (framed layout): the window frame, the sidebar card and the
    main card (its ::before) each get their own wash. */
