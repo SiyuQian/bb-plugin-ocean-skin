@@ -5,7 +5,7 @@ A skin for bb, ported from [SiyuQian/dsh-ocean-effort-skin](https://github.com/S
 - Four watercolor ocean pictures sit behind the app. In each one, the whale-eared girl sits in the left quarter, under the sidebar. Small decorations fill the other corners.
 - A random picture shows at start. Every 60 seconds the next one crossfades in (2.4 s fade). With reduced motion, the picture changes without a fade.
 - The sidebar and the main pane become translucent, so the picture shows through. The skin mixes alpha into the active theme's own colors, so every theme works in light and dark mode.
-- Sticky project labels in the sidebar turn to frosted glass while they are stuck, so rows that scroll under them stay hidden. Menus, dialogs and the composer stay opaque.
+- Sticky project labels in the sidebar stay clear, so the picture shows behind them. Rows fade out as they scroll under a stuck label. Menus, dialogs and the composer stay opaque.
 - On the home page, the "Recent" label and the area around the composer are frosted glass too. In a thread, only the composer column is frosted glass, so the picture beside it stays sharp. Inline visualizations stay solid, because bb draws them in a sandboxed frame. The skin frames each one as a card.
 
 中文：保留 bb 当前主题，加入四张每 60 秒淡入淡出轮换的海洋背景（鲸耳少女在侧边栏后方），侧边栏和主区域变为半透明。

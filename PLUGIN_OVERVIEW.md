@@ -5,7 +5,7 @@ Your bb theme stays as it is. Ocean Skin puts a watercolor ocean picture behind 
 - Four ocean pictures. A whale-eared girl sits in the left quarter of each one, under the sidebar, with small decorations in the other corners.
 - A random picture at start, then a 2.4 second crossfade to the next one every 60 seconds. With reduced motion turned on, the picture changes without a fade.
 - Translucent panes that take their color from the active theme, so every theme works in light and dark mode.
-- Sticky project labels that turn to frosted glass while they are stuck, so rows that scroll under them stay hidden. Menus, dialogs and the composer stay opaque.
+- Sticky project labels that stay clear over the picture. Rows fade out as they scroll under a stuck label. Menus, dialogs and the composer stay opaque.
 
 ## How it works
 

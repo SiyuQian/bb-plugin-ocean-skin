@@ -42,7 +42,23 @@ const BB_HTML = `
     <div id="dock-home" class="bg-background pb-4"><div><form id="composer" data-promptbox class="bg-background">Ask</form></div></div>
   </div>
 </main>
-<div data-sidebar="collapsible-body" id="sidebar-body" style="clip-path: inset(0 -6px 0 0)"></div>
+<div data-sidebar-sticky-stack>
+  <div data-sidebar-sticky-group>
+    <div data-sidebar-sticky-tier="label" id="sticky-label">project</div>
+    <div class="mt-1"><div data-sidebar-sticky-section>
+      <div data-sidebar-windowed-item><div data-sidebar-sticky-group>
+        <div data-sidebar-rename-row id="thread-row">thread</div>
+      </div></div>
+      <div data-sidebar-windowed-item><div data-sidebar-sticky-group>
+        <div data-sidebar-rename-row data-sidebar-sticky-tier="parent" id="parent-row">parent thread</div>
+      </div></div>
+    </div></div>
+  </div>
+  <div data-sidebar-sticky-group>
+    <div data-sidebar-sticky-tier="label">empty project</div>
+    <div class="mt-1"><div id="no-threads">No threads</div></div>
+  </div>
+</div>
 <div data-framed>
   <main data-sidebar="inset" id="framed-inset" style="mask-image: linear-gradient(black, black); clip-path: inset(0 round 8px)"></main>
 </div>
@@ -52,13 +68,13 @@ const BB_HTML = `
     const cs = getComputedStyle(el);
     out[el.id] = { bg: cs.backgroundColor, blur: cs.backdropFilter, visibility: cs.visibility, translate: cs.translate,
       shadow: cs.boxShadow, radius: cs.borderRadius, overflow: cs.overflow, mask: cs.maskImage, clip: cs.clipPath,
-      beforeBlur: getComputedStyle(el, "::before").backdropFilter };
+      beforeBlur: getComputedStyle(el, "::before").backdropFilter, animation: cs.animationName, timeline: cs.animationTimeline };
   }
   document.body.append(Object.assign(document.createElement("pre"), { id: "out", textContent: JSON.stringify(out) }));
 </script>
 `;
 
-type Styles = Record<string, { bg: string; blur: string; visibility: string; translate: string; shadow: string; radius: string; overflow: string; mask: string; clip: string; beforeBlur: string }>;
+type Styles = Record<string, { bg: string; blur: string; visibility: string; translate: string; shadow: string; radius: string; overflow: string; mask: string; clip: string; beforeBlur: string; animation: string; timeline: string }>;
 
 function render(width: number): Styles {
   const file = join(mkdtempSync(join(tmpdir(), "ocean-skin-")), "page.html");
@@ -107,10 +123,16 @@ test("the framed desktop card has no mask or clip-path, so glass in it sees the 
   assert.equal(s["framed-inset"]!.clip, "none");
 });
 
-test("the sidebar body clips with overflow, not a clip-path, so the sticky-label blur sees the rows", { skip }, () => {
+test("sidebar rows fade out under a stuck label; the label stays clear", { skip }, () => {
   const s = render(1280);
-  assert.equal(s["sidebar-body"]!.clip, "none");
-  assert.equal(s["sidebar-body"]!.overflow, "clip");
+  for (const id of ["thread-row", "no-threads"]) {
+    assert.equal(s[id]!.animation, "ocean-row-fade", id);
+    assert.match(s[id]!.timeline, /^view\(/, id);
+  }
+  // A stuck parent row stays visible, and the label gets no glass band.
+  assert.equal(s["parent-row"]!.animation, "none");
+  assert.equal(s["sticky-label"]!.animation, "none");
+  assert.equal(s["sticky-label"]!.beforeBlur, "none");
 });
 
 test("phone rules apply below 768px only", { skip }, () => {
