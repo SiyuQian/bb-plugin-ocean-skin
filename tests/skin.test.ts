@@ -34,7 +34,11 @@ const BB_HTML = `
   <div id="page" class="h-full bg-background">
     <div id="label" class="sticky top-0 z-10 mb-1 bg-background px-2">Recent</div>
     <div id="vis" data-inline-vis-frame class="relative my-2"><iframe srcdoc="x"></iframe></div>
-    <div id="dock-thread" class="shrink-0 bg-background"><form data-promptbox class="bg-background"></form></div>
+    <div data-scroll-footer>
+      <div id="dock-thread" class="relative shrink-0 bg-background">
+        <div id="column" class="chat-prompt-box"><form data-promptbox class="bg-background"></form></div>
+      </div>
+    </div>
     <div id="dock-home" class="bg-background pb-4"><div><form id="composer" data-promptbox class="bg-background">Ask</form></div></div>
   </div>
 </main>
@@ -46,13 +50,14 @@ const BB_HTML = `
   for (const el of document.querySelectorAll("[id]")) {
     const cs = getComputedStyle(el);
     out[el.id] = { bg: cs.backgroundColor, blur: cs.backdropFilter, visibility: cs.visibility, translate: cs.translate,
-      shadow: cs.boxShadow, radius: cs.borderRadius, overflow: cs.overflow, mask: cs.maskImage, clip: cs.clipPath };
+      shadow: cs.boxShadow, radius: cs.borderRadius, overflow: cs.overflow, mask: cs.maskImage, clip: cs.clipPath,
+      beforeBlur: getComputedStyle(el, "::before").backdropFilter };
   }
   document.body.append(Object.assign(document.createElement("pre"), { id: "out", textContent: JSON.stringify(out) }));
 </script>
 `;
 
-type Styles = Record<string, { bg: string; blur: string; visibility: string; translate: string; shadow: string; radius: string; overflow: string; mask: string; clip: string }>;
+type Styles = Record<string, { bg: string; blur: string; visibility: string; translate: string; shadow: string; radius: string; overflow: string; mask: string; clip: string; beforeBlur: string }>;
 
 function render(width: number): Styles {
   const file = join(mkdtempSync(join(tmpdir(), "ocean-skin-")), "page.html");
@@ -79,6 +84,13 @@ test("blocks that rows scroll under are glass; full pages are not", { skip }, ()
   const s = render(390);
   assert.match(s["dock-home"]!.blur, /blur/);
   assert.equal(s.page!.blur, "none");
+});
+
+test("in a thread only the composer column is glass, not the whole dock", { skip }, () => {
+  const s = render(1280);
+  // A blur across the full-width dock would also blur the picture beside the composer.
+  assert.equal(s["dock-thread"]!.blur, "none");
+  assert.match(s.column!.beforeBlur, /blur/);
 });
 
 test("inline visualizations are framed as cards", { skip }, () => {
