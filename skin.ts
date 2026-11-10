@@ -37,15 +37,22 @@ html[${MARK}] body { background-color: transparent !important; }
    inside the sidebar and paint one wash, so the tints never stack. */
 html[${MARK}] [data-sidebar="panel"] { --sidebar: transparent !important; }
 html[${MARK}] [data-sidebar="panel"]:not([data-framed] *) { background-color: var(--ocean-side) !important; }
-/* Sticky project labels used --sidebar to hide rows that scroll under them.
-   While a label is stuck, its ::before (bb's top shield, empty at rest)
-   fills the label with a wash and blurs those rows. At rest it stays clear. */
-html[${MARK}] [data-sidebar-sticky-tier] { container-type: scroll-state; }
-@container scroll-state(stuck: top) {
-  html[${MARK}] [data-sidebar-sticky-tier]::before {
-    top: 0; bottom: 0; height: auto;
-    background-color: var(--ocean-side);
-    -webkit-backdrop-filter: var(--ocean-glass); backdrop-filter: var(--ocean-glass);
+/* Sticky labels used --sidebar to hide rows that scroll under them. The
+   labels stay clear here, so the picture shows behind them. Instead, each row
+   fades out as it reaches the bottom edge of the stuck label, and stays
+   hidden above it. The edge is bb's own offset for the first row under a
+   stuck label (2.25rem if bb renames it). The "No threads" line of an empty
+   project fades the same way. Rows under a stuck project or parent row are
+   not covered: they reach that row before this edge.
+   Without @supports, a browser with no scroll timelines would run the fade
+   as a 0s animation and hide every row. */
+@supports (animation-timeline: view()) {
+  @keyframes ocean-row-fade { to { opacity: 0; } }
+  html[${MARK}] :is([data-sidebar-sticky-section] [data-sidebar-rename-row]:not([data-sidebar-sticky-tier]),
+    [data-sidebar-sticky-tier="label"] + * > :not([data-sidebar-sticky-section])) {
+    animation: ocean-row-fade linear forwards;
+    animation-timeline: view(block var(--bb-sidebar-sticky-project-top, 2.25rem) 0px);
+    animation-range: exit-crossing 0% exit-crossing 50%;
   }
 }
 
