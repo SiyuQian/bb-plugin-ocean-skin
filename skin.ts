@@ -97,10 +97,19 @@ html[${MARK}] [data-framed] { background: var(--ocean-frame) !important; }
 html[${MARK}] [data-framed] [data-sidebar="collapsible-body"] { background-color: var(--ocean-side) !important; }
 html[${MARK}] [data-framed] [data-sidebar="inset"]::before { background-color: var(--ocean-pane) !important; }
 
-/* Phones: the closed sidebar drawer waits under the main pane. Hide it, or
-   its rows show through the translucent pane. */
+/* Phones: bb keeps the sidebar drawer under the main pane and slides the
+   pane off it. The pane is translucent, so the drawer rows would show
+   through it. Hide the closed drawer. While the pane moves
+   ([data-vaul-animate]), move the drawer with the pane's left edge, so no
+   part of the drawer is under the pane. mountSkin copies the pane's offset
+   and transition to --ocean-shelf and --ocean-shelf-move. */
 @media (max-width: 767.98px) {
-  html[${MARK}] [data-sidebar="panel"][data-state="closed"] { visibility: hidden; }
+  html[${MARK}] [data-sidebar="panel"][data-state="closed"] { translate: -100%; }
+  html[${MARK}] [data-sidebar="panel"][data-state="closed"]:not([data-vaul-animate]) { visibility: hidden; }
+  html[${MARK}] [data-sidebar="panel"][data-vaul-animate] {
+    translate: calc(var(--ocean-shelf, 0px) - 100%);
+    transition: var(--ocean-shelf-move, none);
+  }
   /* iOS can show a strip of the picture below the 100dvh shell. Continue the
      washes down into it; with no strip, the shadow is off-screen. */
   html[${MARK}] [data-sidebar="inset"] { box-shadow: 0 200px 0 var(--ocean-pane); }
@@ -147,7 +156,20 @@ export function mountSkin(backgrounds: readonly string[]): () => void {
     front = back;
   }, ROTATE_MS);
 
+  // Phone drawer: bb sets data-vaul-animate on each step of a slide or a
+  // drag, and writes the pane's offset and transition as inline styles.
+  // Copy both to the root, where the drawer rule in SKIN_CSS reads them.
+  const shelfWatch = new MutationObserver(() => {
+    const inset = document.querySelector<HTMLElement>('[data-sidebar="inset"][data-vaul-animate]');
+    root.style.setProperty("--ocean-shelf", inset?.style.translate || "0px");
+    root.style.setProperty("--ocean-shelf-move", inset?.style.transition || "none");
+  });
+  shelfWatch.observe(document.body, { subtree: true, attributeFilter: ["data-vaul-animate"] });
+
   return () => {
+    shelfWatch.disconnect();
+    root.style.removeProperty("--ocean-shelf");
+    root.style.removeProperty("--ocean-shelf-move");
     window.clearInterval(timer);
     for (const layer of layers) layer.remove();
     style.remove();

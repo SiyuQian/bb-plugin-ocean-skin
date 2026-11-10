@@ -29,6 +29,7 @@ const BB_CSS = `
 
 const BB_HTML = `
 <div data-sidebar="panel" data-state="closed" id="panel" class="bg-sidebar">sidebar</div>
+<div data-sidebar="panel" data-state="closed" data-vaul-animate="false" id="panel-moving" style="--ocean-shelf: 120px" class="bg-sidebar">sidebar</div>
 <main data-sidebar="inset" id="inset" class="h-full bg-background">
   <div id="page" class="h-full bg-background">
     <div id="label" class="sticky top-0 z-10 mb-1 bg-background px-2">Recent</div>
@@ -41,14 +42,14 @@ const BB_HTML = `
   const out = {};
   for (const el of document.querySelectorAll("[id]")) {
     const cs = getComputedStyle(el);
-    out[el.id] = { bg: cs.backgroundColor, blur: cs.backdropFilter, visibility: cs.visibility,
+    out[el.id] = { bg: cs.backgroundColor, blur: cs.backdropFilter, visibility: cs.visibility, translate: cs.translate,
       shadow: cs.boxShadow, radius: cs.borderRadius, overflow: cs.overflow };
   }
   document.body.append(Object.assign(document.createElement("pre"), { id: "out", textContent: JSON.stringify(out) }));
 </script>
 `;
 
-type Styles = Record<string, { bg: string; blur: string; visibility: string; shadow: string; radius: string; overflow: string }>;
+type Styles = Record<string, { bg: string; blur: string; visibility: string; translate: string; shadow: string; radius: string; overflow: string }>;
 
 function render(width: number): Styles {
   const file = join(mkdtempSync(join(tmpdir(), "ocean-skin-")), "page.html");
@@ -91,4 +92,13 @@ test("phone rules apply below 768px only", { skip }, () => {
   const desktop = render(1280);
   assert.equal(desktop.panel!.visibility, "visible");
   assert.equal(desktop.inset!.shadow, "none");
+});
+
+test("the phone drawer moves with the pane's left edge while the pane slides", { skip }, () => {
+  const s = render(390);
+  // At rest the closed drawer is hidden. During a slide it is visible, and
+  // its right edge is at the pane's offset (--ocean-shelf, 120px in the test markup).
+  assert.equal(s["panel-moving"]!.visibility, "visible");
+  assert.equal(s["panel-moving"]!.translate, "calc(-100% + 120px)");
+  assert.equal(render(1280)["panel-moving"]!.translate, "none");
 });
