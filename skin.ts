@@ -96,6 +96,13 @@ html[${MARK}] [data-inline-vis-frame] {
 html[${MARK}] [data-framed] { background: var(--ocean-frame) !important; }
 html[${MARK}] [data-framed] [data-sidebar="collapsible-body"] { background-color: var(--ocean-side) !important; }
 html[${MARK}] [data-framed] [data-sidebar="inset"]::before { background-color: var(--ocean-pane) !important; }
+/* bb rounds the main card with a mask and a clip-path. Either one makes the
+   card a backdrop root: the glass in it (header, composer dock) then blurs
+   only the card's wash, without the picture, and paints that wash again as
+   a dark band. Remove both. The wash (::before) keeps its rounded corners. */
+html[${MARK}] [data-framed] [data-sidebar="inset"] {
+  -webkit-mask-image: none !important; mask-image: none !important; clip-path: none !important;
+}
 
 /* Phones: bb keeps the sidebar drawer under the main pane and slides the
    pane off it. The pane is translucent, so the drawer rows would show

@@ -38,18 +38,21 @@ const BB_HTML = `
     <div id="dock-home" class="bg-background pb-4"><div><form id="composer" data-promptbox class="bg-background">Ask</form></div></div>
   </div>
 </main>
+<div data-framed>
+  <main data-sidebar="inset" id="framed-inset" style="mask-image: linear-gradient(black, black); clip-path: inset(0 round 8px)"></main>
+</div>
 <script>
   const out = {};
   for (const el of document.querySelectorAll("[id]")) {
     const cs = getComputedStyle(el);
     out[el.id] = { bg: cs.backgroundColor, blur: cs.backdropFilter, visibility: cs.visibility, translate: cs.translate,
-      shadow: cs.boxShadow, radius: cs.borderRadius, overflow: cs.overflow };
+      shadow: cs.boxShadow, radius: cs.borderRadius, overflow: cs.overflow, mask: cs.maskImage, clip: cs.clipPath };
   }
   document.body.append(Object.assign(document.createElement("pre"), { id: "out", textContent: JSON.stringify(out) }));
 </script>
 `;
 
-type Styles = Record<string, { bg: string; blur: string; visibility: string; translate: string; shadow: string; radius: string; overflow: string }>;
+type Styles = Record<string, { bg: string; blur: string; visibility: string; translate: string; shadow: string; radius: string; overflow: string; mask: string; clip: string }>;
 
 function render(width: number): Styles {
   const file = join(mkdtempSync(join(tmpdir(), "ocean-skin-")), "page.html");
@@ -83,6 +86,12 @@ test("inline visualizations are framed as cards", { skip }, () => {
   assert.equal(s.vis!.radius, "12px");
   assert.equal(s.vis!.overflow, "hidden");
   assert.equal(s.vis!.bg, "rgb(30, 30, 46)");
+});
+
+test("the framed desktop card has no mask or clip-path, so glass in it sees the picture", { skip }, () => {
+  const s = render(1280);
+  assert.equal(s["framed-inset"]!.mask, "none");
+  assert.equal(s["framed-inset"]!.clip, "none");
 });
 
 test("phone rules apply below 768px only", { skip }, () => {
