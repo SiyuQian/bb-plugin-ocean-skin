@@ -42,6 +42,7 @@ const BB_HTML = `
     <div id="dock-home" class="bg-background pb-4"><div><form id="composer" data-promptbox class="bg-background">Ask</form></div></div>
   </div>
 </main>
+<div data-sidebar="collapsible-body" id="sidebar-body" style="clip-path: inset(0 -6px 0 0)"></div>
 <div data-framed>
   <main data-sidebar="inset" id="framed-inset" style="mask-image: linear-gradient(black, black); clip-path: inset(0 round 8px)"></main>
 </div>
@@ -104,6 +105,12 @@ test("the framed desktop card has no mask or clip-path, so glass in it sees the 
   const s = render(1280);
   assert.equal(s["framed-inset"]!.mask, "none");
   assert.equal(s["framed-inset"]!.clip, "none");
+});
+
+test("the sidebar body clips with overflow, not a clip-path, so the sticky-label blur sees the rows", { skip }, () => {
+  const s = render(1280);
+  assert.equal(s["sidebar-body"]!.clip, "none");
+  assert.equal(s["sidebar-body"]!.overflow, "clip");
 });
 
 test("phone rules apply below 768px only", { skip }, () => {
