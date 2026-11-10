@@ -61,6 +61,19 @@ html[${MARK}] [data-sidebar="inset"] .bg-background:not(.h-full):has([data-promp
   background-color: transparent !important;
   -webkit-backdrop-filter: var(--ocean-glass); backdrop-filter: var(--ocean-glass);
 }
+/* In a thread the composer dock spans the whole pane, so its blur would also
+   blur the picture beside the composer. Blur only the composer column, where
+   messages scroll under the cards. A ::before carries the blur, so it can
+   round its corners without a change to the layout. The cards stay solid. */
+html[${MARK}] [data-scroll-footer] .bg-background:not(.h-full):has(.chat-prompt-box) {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html[${MARK}] [data-scroll-footer] .chat-prompt-box { position: relative; }
+html[${MARK}] [data-scroll-footer] .chat-prompt-box::before {
+  content: ""; position: absolute; inset: -8px 4px 0; z-index: -1; pointer-events: none;
+  border-radius: 20px;
+  -webkit-backdrop-filter: var(--ocean-glass); backdrop-filter: var(--ocean-glass);
+}
 /* Where the browser can tell that a label is stuck, blur only then: at rest
    the blur would draw a band across the picture. */
 @supports (container-type: scroll-state) {
