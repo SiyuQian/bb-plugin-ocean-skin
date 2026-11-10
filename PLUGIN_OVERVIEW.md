@@ -6,7 +6,6 @@ Your bb theme stays as it is. Ocean Skin puts a watercolor ocean picture behind 
 - A random picture at start, then a 2.4 second crossfade to the next one every 60 seconds. With reduced motion turned on, the picture changes without a fade.
 - Translucent panes that take their color from the active theme, so every theme works in light and dark mode.
 - Sticky project labels that turn to frosted glass while they are stuck, so rows that scroll under them stay hidden. Menus, dialogs and the composer stay opaque.
-- A composer dock that is clear at the end of a thread. While you scroll up, messages pass under the dock, so it turns opaque and they stay hidden.
 
 ## How it works
 
