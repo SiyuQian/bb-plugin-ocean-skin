@@ -53,6 +53,28 @@ html[${MARK}] [data-sidebar-sticky-tier] { container-type: scroll-state; }
 html[${MARK}] [data-sidebar="inset"]:not([data-framed] *) { background-color: var(--ocean-pane) !important; }
 /* Full-height pages and the composer dock repeat the pane color; clear them. */
 html[${MARK}] [data-sidebar="inset"] :is(.h-full, .shrink-0).bg-background { background-color: transparent !important; }
+/* The phone home page has two more pane-colored blocks that rows scroll
+   under: sticky list labels ("Recent") and the composer dock. Make them
+   glass, like the headers below. The composer itself keeps its color. */
+html[${MARK}] [data-sidebar="inset"] .sticky.bg-background,
+html[${MARK}] [data-sidebar="inset"] .bg-background:not(.h-full):has([data-promptbox]) {
+  background-color: transparent !important;
+  -webkit-backdrop-filter: var(--ocean-glass); backdrop-filter: var(--ocean-glass);
+}
+/* Where the browser can tell that a label is stuck, blur only then: at rest
+   the blur would draw a band across the picture. */
+@supports (container-type: scroll-state) {
+  html[${MARK}] [data-sidebar="inset"] .sticky.bg-background {
+    container-type: scroll-state;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  @container scroll-state(stuck: top) {
+    html[${MARK}] [data-sidebar="inset"] .sticky.bg-background::before {
+      content: ""; position: absolute; inset: 0; z-index: -1;
+      -webkit-backdrop-filter: var(--ocean-glass); backdrop-filter: var(--ocean-glass);
+    }
+  }
+}
 /* Headers and scrims become glass, and the fades that hid scrolled content
    under them go away (they would draw a band of solid color). */
 html[${MARK}] [data-sidebar="inset"] :is(.bg-surface-scrim, .bg-surface-scrim\\/95) {
@@ -60,6 +82,14 @@ html[${MARK}] [data-sidebar="inset"] :is(.bg-surface-scrim, .bg-surface-scrim\\/
   -webkit-backdrop-filter: var(--ocean-glass); backdrop-filter: var(--ocean-glass);
 }
 html[${MARK}] [data-overflow-fade] { visibility: hidden; }
+
+/* Inline visualizations are sandboxed iframes that paint the solid theme
+   background; the skin cannot style inside them. Frame each as a card in
+   the same color, so the solid block has a rounded, padded edge. */
+html[${MARK}] [data-inline-vis-frame] {
+  overflow: hidden; border-radius: 12px; border: 1px solid var(--border);
+  padding: 8px 12px; background-color: var(--background);
+}
 
 /* Desktop app (framed layout): the window frame, the sidebar card and the
    main card (its ::before) each get their own wash. */
@@ -71,6 +101,10 @@ html[${MARK}] [data-framed] [data-sidebar="inset"]::before { background-color: v
    its rows show through the translucent pane. */
 @media (max-width: 767.98px) {
   html[${MARK}] [data-sidebar="panel"][data-state="closed"] { visibility: hidden; }
+  /* iOS can show a strip of the picture below the 100dvh shell. Continue the
+     washes down into it; with no strip, the shadow is off-screen. */
+  html[${MARK}] [data-sidebar="inset"] { box-shadow: 0 200px 0 var(--ocean-pane); }
+  html[${MARK}] [data-sidebar="panel"] { box-shadow: 0 200px 0 var(--ocean-side); }
 }
 
 @media (prefers-reduced-motion: reduce) {
