@@ -143,6 +143,21 @@ html[${MARK}] [data-framed] [data-sidebar="inset"] {
   html[${MARK}] [data-sidebar="panel"] { box-shadow: 0 200px 0 var(--ocean-side); }
 }
 
+/* Content width: bb caps the message column and the composer at 760px.
+   Once the user drags an edge, mountSkin sets --ocean-width on the root and
+   both follow it. The handles sit on the column's two edges (desktop only). */
+html[${MARK}][data-ocean-width] .mx-auto.max-w-\\[760px\\] { max-width: var(--ocean-width); }
+.ocean-skin-grip {
+  position: fixed; z-index: 20; width: 12px; margin-left: -6px; cursor: ew-resize;
+  touch-action: none; display: none;
+}
+.ocean-skin-grip::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 5px; width: 2px;
+  border-radius: 1px; background: currentColor; opacity: 0; transition: opacity 0.15s;
+}
+.ocean-skin-grip:hover::after, .ocean-skin-grip[data-drag]::after { opacity: 0.35; }
+@media (min-width: 768px) { .ocean-skin-grip[data-show] { display: block; } }
+
 @media (prefers-reduced-motion: reduce) {
   .ocean-skin-layer { transition: none; }
 }
@@ -193,7 +208,100 @@ export function mountSkin(backgrounds: readonly string[]): () => void {
   });
   shelfWatch.observe(document.body, { subtree: true, attributeFilter: ["data-vaul-animate"] });
 
+  // Content width: two grips on the message column's edges. The column is
+  // centered, so moving one edge by dx changes the width by 2 * dx.
+  const WIDTH_KEY = "ocean-skin-width";
+  const COLUMN = ".mx-auto.max-w-\\[760px\\]:not(.chat-prompt-box)";
+  const setWidth = (px: number | null) => {
+    if (px === null) {
+      root.removeAttribute("data-ocean-width");
+      root.style.removeProperty("--ocean-width");
+    } else {
+      root.setAttribute("data-ocean-width", "");
+      root.style.setProperty("--ocean-width", `${Math.round(px)}px`);
+    }
+  };
+  try {
+    const saved = Number(localStorage.getItem(WIDTH_KEY));
+    if (saved >= 400) setWidth(saved);
+  } catch {
+    // No storage: the width resets on reload.
+  }
+  const grips = [-1, 1].map((side) => {
+    const grip = document.createElement("div");
+    grip.className = "ocean-skin-grip";
+    grip.title = "Drag to resize. Double-click to reset.";
+    grip.addEventListener("pointerdown", (event) => {
+      const column = document.querySelector<HTMLElement>(COLUMN);
+      const inset = document.querySelector<HTMLElement>('[data-sidebar="inset"]');
+      if (!column) return;
+      event.preventDefault();
+      grip.setPointerCapture(event.pointerId);
+      grip.setAttribute("data-drag", "");
+      const startX = event.clientX;
+      const startWidth = column.getBoundingClientRect().width;
+      const max = (inset?.getBoundingClientRect().width ?? window.innerWidth) - 8;
+      let width = startWidth;
+      const move = (e: PointerEvent) => {
+        width = Math.min(max, Math.max(420, startWidth + 2 * side * (e.clientX - startX)));
+        setWidth(width);
+        place();
+      };
+      const up = () => {
+        grip.removeAttribute("data-drag");
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        grip.removeEventListener("pointercancel", up);
+        try {
+          localStorage.setItem(WIDTH_KEY, String(Math.round(width)));
+        } catch {
+          // Not saved.
+        }
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+      grip.addEventListener("pointercancel", up);
+    });
+    grip.addEventListener("dblclick", () => {
+      setWidth(null);
+      try {
+        localStorage.removeItem(WIDTH_KEY);
+      } catch {
+        // Nothing to remove.
+      }
+      place();
+    });
+    document.body.append(grip);
+    return grip;
+  });
+  function place() {
+    const column = document.querySelector<HTMLElement>(COLUMN);
+    const inset = document.querySelector<HTMLElement>('[data-sidebar="inset"]');
+    grips.forEach((grip, i) => {
+      if (!column || !inset) return grip.removeAttribute("data-show");
+      const c = column.getBoundingClientRect();
+      const p = inset.getBoundingClientRect();
+      grip.style.left = `${i === 0 ? c.left : c.right}px`;
+      grip.style.top = `${p.top}px`;
+      grip.style.height = `${p.height}px`;
+      grip.setAttribute("data-show", "");
+    });
+  }
+  let queued = 0;
+  const queuePlace = () => {
+    if (!queued) queued = requestAnimationFrame(() => ((queued = 0), place()));
+  };
+  const placeWatch = new MutationObserver(queuePlace);
+  placeWatch.observe(document.body, { subtree: true, childList: true });
+  window.addEventListener("resize", queuePlace);
+  queuePlace();
+
   return () => {
+    placeWatch.disconnect();
+    window.removeEventListener("resize", queuePlace);
+    cancelAnimationFrame(queued);
+    for (const grip of grips) grip.remove();
+    setWidth(null);
     shelfWatch.disconnect();
     root.style.removeProperty("--ocean-shelf");
     root.style.removeProperty("--ocean-shelf-move");
