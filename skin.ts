@@ -152,14 +152,19 @@ html[${MARK}][data-ocean-width] .mx-auto.max-w-\\[760px\\] { max-width: var(--oc
   touch-action: none; display: none;
 }
 .ocean-skin-grip::after {
-  content: ""; position: absolute; top: 0; bottom: 0; left: 5px; width: 2px;
-  border-radius: 1px; background: currentColor; opacity: 0; transition: opacity 0.15s;
+  content: ""; position: absolute; top: 50%; left: 4px; width: 4px; height: 48px;
+  margin-top: -24px; border-radius: 999px;
+  background: color-mix(in oklab, var(--foreground) 30%, transparent);
+  opacity: 0; transform: scaleY(0.75);
+  transition: opacity 160ms ease, transform 160ms ease, background-color 160ms ease;
 }
-.ocean-skin-grip:hover::after, .ocean-skin-grip[data-drag]::after { opacity: 0.35; }
+.ocean-skin-grip:hover::after, .ocean-skin-grip[data-drag]::after { opacity: 1; transform: scaleY(1); }
+.ocean-skin-grip[data-drag]::after { background: color-mix(in oklab, var(--foreground) 55%, transparent); }
+html[${MARK}][data-ocean-resizing] :is(body, body *) { cursor: ew-resize !important; user-select: none !important; }
 @media (min-width: 768px) { .ocean-skin-grip[data-show] { display: block; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ocean-skin-layer { transition: none; }
+  .ocean-skin-layer, .ocean-skin-grip::after { transition: none; }
 }
 `;
 
@@ -227,40 +232,57 @@ export function mountSkin(backgrounds: readonly string[]): () => void {
   } catch {
     // No storage: the width resets on reload.
   }
+  let stopResize: (() => void) | undefined;
   const grips = [-1, 1].map((side) => {
     const grip = document.createElement("div");
     grip.className = "ocean-skin-grip";
     grip.title = "Drag to resize. Double-click to reset.";
     grip.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || stopResize) return;
       const column = document.querySelector<HTMLElement>(COLUMN);
       const inset = document.querySelector<HTMLElement>('[data-sidebar="inset"]');
       if (!column) return;
       event.preventDefault();
       grip.setPointerCapture(event.pointerId);
       grip.setAttribute("data-drag", "");
+      root.setAttribute("data-ocean-resizing", "");
       const startX = event.clientX;
       const startWidth = column.getBoundingClientRect().width;
       const max = (inset?.getBoundingClientRect().width ?? window.innerWidth) - 8;
       let width = startWidth;
-      const move = (e: PointerEvent) => {
-        width = Math.min(max, Math.max(420, startWidth + 2 * side * (e.clientX - startX)));
+      let frame = 0;
+      const apply = () => {
+        frame = 0;
         setWidth(width);
         place();
       };
+      const move = (e: PointerEvent) => {
+        width = Math.min(max, Math.max(420, startWidth + 2 * side * (e.clientX - startX)));
+        if (!frame) frame = requestAnimationFrame(apply);
+      };
       const up = () => {
+        if (frame) {
+          cancelAnimationFrame(frame);
+          apply();
+        }
+        stopResize = undefined;
+        root.removeAttribute("data-ocean-resizing");
         grip.removeAttribute("data-drag");
         grip.removeEventListener("pointermove", move);
         grip.removeEventListener("pointerup", up);
         grip.removeEventListener("pointercancel", up);
+        grip.removeEventListener("lostpointercapture", up);
         try {
           localStorage.setItem(WIDTH_KEY, String(Math.round(width)));
         } catch {
           // Not saved.
         }
       };
+      stopResize = up;
       grip.addEventListener("pointermove", move);
       grip.addEventListener("pointerup", up);
       grip.addEventListener("pointercancel", up);
+      grip.addEventListener("lostpointercapture", up);
     });
     grip.addEventListener("dblclick", () => {
       setWidth(null);
@@ -297,6 +319,7 @@ export function mountSkin(backgrounds: readonly string[]): () => void {
   queuePlace();
 
   return () => {
+    stopResize?.();
     placeWatch.disconnect();
     window.removeEventListener("resize", queuePlace);
     cancelAnimationFrame(queued);
